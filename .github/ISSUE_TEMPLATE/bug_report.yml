@@ -1,0 +1,83 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in UO-MapViewer
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report. Please be as specific as possible.
+
+  - type: input
+    id: dotnet-version
+    attributes:
+      label: .NET Version
+      description: Output of `dotnet --version`
+      placeholder: "e.g. 8.0.100"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: client-format
+    attributes:
+      label: UO Client File Format
+      options:
+        - .mul (Classic Client)
+        - .uop (Enhanced Client)
+        - Both
+        - Unknown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: facet
+    attributes:
+      label: Facet
+      options:
+        - Felucca
+        - Trammel
+        - Ilshenar
+        - Malas
+        - Tokuno
+        - TerMur
+        - All / Multiple
+        - N/A
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - UO.MapViewer (WinForms)
+        - UO.MapExporter (CLI)
+        - Both
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      placeholder: Describe the bug clearly...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Output / Logs
+      render: shell
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
