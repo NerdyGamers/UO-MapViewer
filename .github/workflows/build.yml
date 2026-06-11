@@ -1,0 +1,36 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore UO-MapViewer.sln
+
+      - name: Build solution
+        run: dotnet build UO-MapViewer.sln --configuration Release --no-restore
+
+      - name: Build UO.MapExporter (self-contained)
+        run: dotnet publish UO.MapExporter/UO.MapExporter.csproj --configuration Release --runtime win-x64 --self-contained true --output ./artifacts/UO.MapExporter
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: UO.MapExporter-win-x64
+          path: ./artifacts/UO.MapExporter/
+          retention-days: 14
