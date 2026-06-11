@@ -1,0 +1,47 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for UO-MapViewer
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Check existing issues first to avoid duplicates.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - UO.MapViewer (WinForms)
+        - UO.MapExporter (CLI)
+        - Both
+        - New component
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      placeholder: "e.g. There is no way to switch facets without restarting the viewer..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      placeholder: "e.g. Add a facet dropdown in the toolbar..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
