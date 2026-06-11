@@ -9,6 +9,7 @@ namespace UO.MapExporter
 {
     /// <summary>
     /// Core rendering + export logic. Shared by the CLI and the WinForms ExportDialog.
+    /// Delegates rendering to Map.GetImage() which uses the correct RadarCol.Colors pipeline.
     /// </summary>
     public static class MapExporterCore
     {
@@ -31,7 +32,9 @@ namespace UO.MapExporter
         }
 
         /// <summary>
-        /// Renders a rectangular block of UO tiles into a Bitmap.
+        /// Renders a rectangular region of UO tiles into a 32bpp Bitmap.
+        /// Coordinates are in tile units; the result is (blockW * scale) x (blockH * scale) pixels.
+        /// Delegates to Map.GetImage() which uses Ultima's native RadarCol.Colors pipeline.
         /// </summary>
         public static Bitmap RenderBlock(
             Map map,
@@ -40,67 +43,37 @@ namespace UO.MapExporter
             int scale,
             bool renderStatics)
         {
-            int px = blockW * scale;
-            int py = blockH * scale;
-            var bmp = new Bitmap(px, py, PixelFormat.Format32bppArgb);
+            // Map.GetImage() takes 8x8-block coordinates and renders each block as 8x8 pixels.
+            // Convert tile coords to block coords by dividing by 8, then request enough blocks
+            // to cover the desired tile region.
+            int blockStartX = startX / 8;
+            int blockStartY = startY / 8;
+            int blocksWide  = (blockW + 7) / 8;
+            int blocksTall  = (blockH + 7) / 8;
 
-            var tileMatrix = map.Tiles;
+            // GetImage returns a 16bpp RGB555 bitmap; convert to 32bpp for downstream use.
+            using var raw = map.GetImage(blockStartX, blockStartY, blocksWide, blocksTall, renderStatics);
 
-            unsafe
-            {
-                var data = bmp.LockBits(new Rectangle(0, 0, px, py), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
-                int stride = data.Stride / 4;
-                var ptr = (int*)data.Scan0;
+            int srcW = raw.Width;
+            int srcH = raw.Height;
 
-                for (int ty = 0; ty < blockH; ty++)
-                {
-                    for (int tx = 0; tx < blockW; tx++)
-                    {
-                        int mx = startX + tx;
-                        int my = startY + ty;
+            // Trim to exact tile region (GetImage may render extra tiles at the edges).
+            int tilePixW = Math.Min(blockW, srcW);
+            int tilePixH = Math.Min(blockH, srcH);
 
-                        int color = Color.Black.ToArgb();
+            int outW = tilePixW * scale;
+            int outH = tilePixH * scale;
 
-                        if (mx >= 0 && my >= 0 && mx < map.Width && my < map.Height)
-                        {
-                            var land = tileMatrix.GetLandTile(mx, my);
-                            ushort id = (ushort)(land.ID & 0x3FFF);
-                            color = Radar565ToArgb(RadarCol.GetColorData(id));
+            var result = new Bitmap(outW, outH, PixelFormat.Format32bppArgb);
 
-                            if (renderStatics)
-                            {
-                                var statics = tileMatrix.GetStaticTiles(mx, my);
-                                int highZ = int.MinValue;
-                                int sid = -1;
-                                foreach (var s in statics)
-                                    if (s.Z > highZ) { highZ = s.Z; sid = s.ID; }
+            using var g = Graphics.FromImage(result);
+            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+            g.PixelOffsetMode   = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+            g.DrawImage(raw, new Rectangle(0, 0, outW, outH),
+                             new Rectangle(0, 0, tilePixW, tilePixH),
+                             GraphicsUnit.Pixel);
 
-                                if (sid >= 0)
-                                    color = Radar565ToArgb(RadarCol.GetColorData(sid + 0x4000));
-                            }
-                        }
-
-                        for (int sy = 0; sy < scale; sy++)
-                            for (int sx = 0; sx < scale; sx++)
-                                ptr[(ty * scale + sy) * stride + tx * scale + sx] = color;
-                    }
-                }
-
-                bmp.UnlockBits(data);
-            }
-
-            return bmp;
-        }
-
-        private static int Radar565ToArgb(int c16)
-        {
-            int r = (c16 >> 10) & 0x1F;
-            int g = (c16 >> 5)  & 0x1F;
-            int b = c16         & 0x1F;
-            return (unchecked((int)0xFF000000))
-                 | ((r << 3 | r >> 2) << 16)
-                 | ((g << 3 | g >> 2) << 8)
-                 |  (b << 3 | b >> 2);
+            return result;
         }
     }
 }
