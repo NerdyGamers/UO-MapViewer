@@ -1,0 +1,19 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.cache
+
+## Rider
+.idea/
+
+## Output
+output/
+*.png
+*.dzi
+
+## OS
+.DS_Store
+Thumbs.db
